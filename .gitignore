@@ -1,0 +1,5 @@
+out
+.cache
+.clang-format
+.clang-tidy
+compile_commands.json
