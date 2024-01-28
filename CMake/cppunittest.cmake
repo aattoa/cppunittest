@@ -1,7 +1,7 @@
 include(CTest)
 
 # Set the post-build script path here so it can be retrieved from anywhere by `cppunittest_add_tests`.
-set(CPPUNITTEST_POST_BUILD_SCRIPT "${CMAKE_CURRENT_LIST_DIR}/cppunittest_add_tests.cmake")
+set(CPPUNITTEST_POST_BUILD_SCRIPT "${CMAKE_CURRENT_LIST_DIR}/cppunittest_post_build_callback.cmake")
 
 function (cppunittest_add_tests target)
     cmake_parse_arguments(PARSE_ARGV 1 "" "" "" "WORKING_DIR")
