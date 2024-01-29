@@ -1,4 +1,5 @@
 out
+*.pdf
 .cache
 .clang-format
 .clang-tidy
