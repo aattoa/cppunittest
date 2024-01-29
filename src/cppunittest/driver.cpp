@@ -9,7 +9,7 @@ auto main(int const argc, char const* const* const argv) -> int
     cppargs::Parameters parameters;
 
     auto const help_flag       = parameters.add('h', "help", "Show this help text");
-    auto const list_tests_flag = parameters.add("list-tests", "List all registered tests");
+    auto const list_tests_flag = parameters.add("list-tests", "List registered tests");
     auto const run_test_option = parameters.add<std::string_view>("run-test", "Run the given test");
 
     try {
@@ -21,7 +21,7 @@ auto main(int const argc, char const* const* const argv) -> int
             cppunittest::internal::list_tests();
         }
         else if (run_test_option) {
-            cppunittest::internal::run_test(run_test_option.value());
+            return cppunittest::internal::run_test(run_test_option.value());
         }
         return EXIT_SUCCESS;
     }
