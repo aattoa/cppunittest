@@ -60,12 +60,31 @@ namespace cppunittest::internal {
         static_cast<bool>(__VA_ARGS__),                \
         name "(" #__VA_ARGS__ ")")
 
+#define CPPUNITTEST_INTERNAL_ASSERT_THROWS_AS(exception, name, type, ...) \
+    ::cppunittest::internal::perform_assert(                              \
+        ::cppunittest::internal::Assertion_type::type,                    \
+        [&] {                                                             \
+            try {                                                         \
+                static_cast<void>(__VA_ARGS__);                           \
+                return false;                                             \
+            }                                                             \
+            catch (exception const&) {                                    \
+                return true;                                              \
+            }                                                             \
+        }(),                                                              \
+        name "(" #exception ", " #__VA_ARGS__ ")")
+
 #define CPPUNITTEST_INTERNAL_ASSERT_EQUALS(name, type, ...) \
     ::cppunittest::internal::perform_assert_equals(         \
         ::cppunittest::internal::Assertion_type::type, __VA_ARGS__, name "(" #__VA_ARGS__ ")")
 
 #define REQUIRE(...) CPPUNITTEST_INTERNAL_ASSERT("REQUIRE", require, __VA_ARGS__)
 #define CHECK(...) CPPUNITTEST_INTERNAL_ASSERT("CHECK", check, __VA_ARGS__)
+
+#define REQUIRE_THROWS_AS(exception, ...) \
+    CPPUNITTEST_INTERNAL_ASSERT_THROWS_AS(exception, "REQUIRE_THROWS_AS", require, __VA_ARGS__)
+#define CHECK_THROWS_AS(exception, ...) \
+    CPPUNITTEST_INTERNAL_ASSERT_THROWS_AS(exception, "CHECK_THROWS_AS", check, __VA_ARGS__)
 
 #define REQUIRE_EQUAL(...) CPPUNITTEST_INTERNAL_ASSERT_EQUALS("REQUIRE_EQUAL", require, __VA_ARGS__)
 #define CHECK_EQUAL(...) CPPUNITTEST_INTERNAL_ASSERT_EQUALS("CHECK_EQUAL", check, __VA_ARGS__)
