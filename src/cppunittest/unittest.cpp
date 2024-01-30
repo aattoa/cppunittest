@@ -1,14 +1,22 @@
 #include <cppunittest/unittest.hpp>
 
+#include <algorithm>
 #include <cstdlib>
 #include <print>
+#include <ranges>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 
 namespace {
-    constinit std::vector<std::pair<std::string_view, void (*)()>> test_container; // NOLINT
-    constinit int unittest_exit_status = EXIT_SUCCESS;                             // NOLINT
+    struct Test {
+        using Run = void (*)();
+        std::string_view name;
+        Run              run;
+    };
+
+    constinit std::vector<Test> unittest_vector;                     // NOLINT: mutable global
+    constinit int               unittest_exit_status = EXIT_SUCCESS; // NOLINT: mutable global
 
     auto test_failure(cppunittest::internal::Assertion_type const type) -> void
     {
@@ -62,25 +70,29 @@ auto cppunittest::internal::perform_type_erased_assert_equals(
 
 auto cppunittest::internal::list_tests() -> void
 {
-    for (auto const& [test_name, _] : test_container) {
+    for (auto const& [test_name, _] : unittest_vector) {
         std::println("{}", test_name);
     }
 }
 
 auto cppunittest::internal::run_test(std::string_view const requested_name) -> int
 {
-    unittest_exit_status = EXIT_SUCCESS;
-    for (auto const& [test_name, test_runner] : test_container) {
-        if (test_name == requested_name) {
-            test_runner();
-            return unittest_exit_status;
-        }
+    auto const test = std::ranges::find(unittest_vector, requested_name, &Test::name);
+    if (test != unittest_vector.end()) {
+        unittest_exit_status = EXIT_SUCCESS;
+        test->run();
+        return unittest_exit_status;
     }
     throw std::runtime_error { std::format("No test named '{}' found", requested_name) };
 }
 
-cppunittest::internal::Test_adder::Test_adder(
-    std::string_view const name, void (*const test_runner)())
+cppunittest::internal::Test_adder::Test_adder(std::string_view const name, void (*const run)())
 {
-    test_container.emplace_back(name, test_runner);
+    if (std::ranges::contains(unittest_vector, name, &Test::name)) {
+        std::println(stderr, "Error: cppunittest: Detected multiple tests named '{}'", name);
+        std::quick_exit(EXIT_FAILURE);
+    }
+    else {
+        unittest_vector.emplace_back(name, run);
+    }
 }
