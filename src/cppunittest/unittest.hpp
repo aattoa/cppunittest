@@ -21,8 +21,16 @@ namespace cppunittest::internal {
         std::format_args     format_args,
         std::source_location caller) -> void;
 
+    template <class L, class R>
+    concept weak_equality_comparable_with = requires(L const l, R const r) {
+        // clang-format off
+        { l == r } -> std::same_as<bool>;
+        { r == l } -> std::same_as<bool>;
+        // clang-format on
+    };
+
     template <std::formattable<char> L, std::formattable<char> R>
-        requires std::equality_comparable_with<L, R>
+        requires weak_equality_comparable_with<L, R>
     auto perform_assert_equals(
         Assertion_type       type,
         L const&             lhs,
