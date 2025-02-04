@@ -33,7 +33,7 @@ set(script)
 # Register the discovered tests.
 foreach (test_name IN LISTS output)
     if (NOT "${test_name}" STREQUAL "")
-        set(script "${script}add_test(\"${test_name}\" \"${EXECUTABLE}\" --run-test \"${test_name}\")\n")
+        set(script "${script}add_test(\"${test_name}\" \"${EXECUTABLE}\" \"${test_name}\")\n")
         set(script "${script}set_tests_properties(\"${test_name}\" PROPERTIES WORKING_DIRECTORY \"${WORKING_DIR}\")\n")
     endif ()
 endforeach ()

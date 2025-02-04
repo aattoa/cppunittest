@@ -6,43 +6,46 @@
 #include <string_view>
 
 namespace cppunittest::internal {
-    enum class Assertion_type { require, check };
+    enum struct Assertion_type : char { require, check };
 
-    auto perform_assert(
+    void perform_assertion(
         Assertion_type       type,
-        bool                 value,
+        bool                 success,
         std::string_view     description,
-        std::source_location caller = std::source_location::current()) -> void;
+        std::source_location caller = std::source_location::current());
 
-    auto perform_type_erased_assert_equals(
+    void perform_type_erased_equality_assertion(
         Assertion_type       type,
-        bool                 equal,
+        bool                 success,
         std::string_view     description,
         std::format_args     format_args,
-        std::source_location caller) -> void;
+        std::source_location caller);
 
-    template <class L, class R>
+    template <typename L, typename R>
     concept weak_equality_comparable_with = requires(L const l, R const r) {
-        // clang-format off
         { l == r } -> std::same_as<bool>;
         { r == l } -> std::same_as<bool>;
-        // clang-format on
     };
 
     template <std::formattable<char> L, std::formattable<char> R>
         requires weak_equality_comparable_with<L, R>
-    auto perform_assert_equals(
-        Assertion_type       type,
+    void perform_equality_assertion(
+        Assertion_type const type,
+        bool const           expectation,
         L const&             lhs,
         R const&             rhs,
         std::string_view     description,
-        std::source_location caller = std::source_location::current()) -> void
+        std::source_location caller = std::source_location::current())
     {
-        ::cppunittest::internal::perform_type_erased_assert_equals(
-            type, lhs == rhs, description, std::make_format_args(lhs, rhs), caller);
+        perform_type_erased_equality_assertion(
+            type,
+            (lhs == rhs) == expectation,
+            description,
+            std::make_format_args(lhs, rhs),
+            caller);
     }
 
-    auto list_tests() -> void;
+    void list_tests();
 
     [[nodiscard]] auto run_test(std::string_view name) -> int;
 
@@ -60,16 +63,16 @@ namespace cppunittest::internal {
         name,                                                                                      \
         CPPUNITTEST_INTERNAL_CONCAT(cppunittest_internal_run_test_, line),                         \
     };                                                                                             \
-    static auto CPPUNITTEST_INTERNAL_CONCAT(cppunittest_internal_run_test_, line)() -> void
+    static void CPPUNITTEST_INTERNAL_CONCAT(cppunittest_internal_run_test_, line)()
 
 #define CPPUNITTEST_INTERNAL_ASSERT(name, type, ...)   \
-    ::cppunittest::internal::perform_assert(           \
+    ::cppunittest::internal::perform_assertion(        \
         ::cppunittest::internal::Assertion_type::type, \
         static_cast<bool>(__VA_ARGS__),                \
         name "(" #__VA_ARGS__ ")")
 
 #define CPPUNITTEST_INTERNAL_ASSERT_THROWS_AS(exception, name, type, ...) \
-    ::cppunittest::internal::perform_assert(                              \
+    ::cppunittest::internal::perform_assertion(                           \
         ::cppunittest::internal::Assertion_type::type,                    \
         [&] {                                                             \
             try {                                                         \
@@ -82,9 +85,12 @@ namespace cppunittest::internal {
         }(),                                                              \
         name "(" #exception ", " #__VA_ARGS__ ")")
 
-#define CPPUNITTEST_INTERNAL_ASSERT_EQUALS(name, type, ...) \
-    ::cppunittest::internal::perform_assert_equals(         \
-        ::cppunittest::internal::Assertion_type::type, __VA_ARGS__, name "(" #__VA_ARGS__ ")")
+#define CPPUNITTEST_INTERNAL_ASSERT_EQUALS(name, type, expectation, ...) \
+    ::cppunittest::internal::perform_equality_assertion(                 \
+        ::cppunittest::internal::Assertion_type::type,                   \
+        expectation,                                                     \
+        __VA_ARGS__,                                                     \
+        name "(" #__VA_ARGS__ ")")
 
 #define REQUIRE(...) CPPUNITTEST_INTERNAL_ASSERT("REQUIRE", require, __VA_ARGS__)
 #define CHECK(...) CPPUNITTEST_INTERNAL_ASSERT("CHECK", check, __VA_ARGS__)
@@ -94,7 +100,13 @@ namespace cppunittest::internal {
 #define CHECK_THROWS_AS(exception, ...) \
     CPPUNITTEST_INTERNAL_ASSERT_THROWS_AS(exception, "CHECK_THROWS_AS", check, __VA_ARGS__)
 
-#define REQUIRE_EQUAL(...) CPPUNITTEST_INTERNAL_ASSERT_EQUALS("REQUIRE_EQUAL", require, __VA_ARGS__)
-#define CHECK_EQUAL(...) CPPUNITTEST_INTERNAL_ASSERT_EQUALS("CHECK_EQUAL", check, __VA_ARGS__)
+#define REQUIRE_EQUAL(...) \
+    CPPUNITTEST_INTERNAL_ASSERT_EQUALS("REQUIRE_EQUAL", require, true, __VA_ARGS__)
+#define CHECK_EQUAL(...) CPPUNITTEST_INTERNAL_ASSERT_EQUALS("CHECK_EQUAL", check, true, __VA_ARGS__)
+
+#define REQUIRE_NOT_EQUAL(...) \
+    CPPUNITTEST_INTERNAL_ASSERT_EQUALS("REQUIRE_NOT_EQUAL", require, false, __VA_ARGS__)
+#define CHECK_NOT_EQUAL(...) \
+    CPPUNITTEST_INTERNAL_ASSERT_EQUALS("CHECK_NOT_EQUAL", check, false, __VA_ARGS__)
 
 #define UNITTEST(name) CPPUNITTEST_INTERNAL_TEST_IMPL(name, __LINE__) // NOLINT

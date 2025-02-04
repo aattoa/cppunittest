@@ -18,7 +18,7 @@ namespace {
     constinit std::vector<Test> unittest_vector;                     // NOLINT: mutable global
     constinit int               unittest_exit_status = EXIT_SUCCESS; // NOLINT: mutable global
 
-    auto test_failure(cppunittest::internal::Assertion_type const type) -> void
+    void test_failure(cppunittest::internal::Assertion_type const type)
     {
         if (type == cppunittest::internal::Assertion_type::require) {
             std::quick_exit(EXIT_FAILURE);
@@ -28,8 +28,8 @@ namespace {
         }
     }
 
-    auto print_assertion_failure(
-        std::string_view const assertion, std::source_location const caller) -> void
+    void print_assertion_failure(
+        std::string_view const assertion, std::source_location const caller)
     {
         std::println(
             stderr,
@@ -40,27 +40,27 @@ namespace {
     }
 } // namespace
 
-auto cppunittest::internal::perform_assert(
+void cppunittest::internal::perform_assertion(
     Assertion_type const       type,
-    bool const                 value,
+    bool const                 success,
     std::string_view const     description,
-    std::source_location const caller) -> void
+    std::source_location const caller)
 {
-    if (value) {
+    if (success) {
         return;
     }
     print_assertion_failure(description, caller);
     test_failure(type);
 }
 
-auto cppunittest::internal::perform_type_erased_assert_equals(
+void cppunittest::internal::perform_type_erased_equality_assertion(
     Assertion_type const       type,
-    bool const                 equal,
+    bool const                 success,
     std::string_view const     description,
     std::format_args const     format_args,
-    std::source_location const caller) -> void
+    std::source_location const caller)
 {
-    if (equal) {
+    if (success) {
         return;
     }
     print_assertion_failure(description, caller);
@@ -68,22 +68,22 @@ auto cppunittest::internal::perform_type_erased_assert_equals(
     test_failure(type);
 }
 
-auto cppunittest::internal::list_tests() -> void
+void cppunittest::internal::list_tests()
 {
-    for (auto const& [test_name, _] : unittest_vector) {
-        std::println("{}", test_name);
+    for (auto const& [name, _] : unittest_vector) {
+        std::println("{}", name);
     }
 }
 
-auto cppunittest::internal::run_test(std::string_view const requested_name) -> int
+auto cppunittest::internal::run_test(std::string_view const name) -> int
 {
-    auto const test = std::ranges::find(unittest_vector, requested_name, &Test::name);
+    auto const test = std::ranges::find(unittest_vector, name, &Test::name);
     if (test != unittest_vector.end()) {
         unittest_exit_status = EXIT_SUCCESS;
         test->run();
         return unittest_exit_status;
     }
-    throw std::runtime_error { std::format("No test named '{}' found", requested_name) };
+    throw std::runtime_error { std::format("No test named '{}' found", name) };
 }
 
 cppunittest::internal::Test_adder::Test_adder(std::string_view const name, void (*const run)())
